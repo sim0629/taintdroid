@@ -128,11 +128,9 @@ public final class Posix implements Os {
         int fdInt = fd.getDescriptor();
         int tag = Taint.getTaintFile(fdInt);
         if (tag != Taint.TAINT_CLEAR) {
-            String dstr = new String((byte[])buffer, bufferOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
-            // replace non-printable characters
-            dstr = dstr.replaceAll("\\p{C}", ".");
+            String dstr = Taint.dump((byte[])buffer, bufferOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
             String tstr = "0x" + Integer.toHexString(tag);
-            Taint.log("libcore.os.read(" + fdInt + ") reading with tag " + tstr + " data[" + dstr + "]");
+            Taint.log("libcore.os.read(" + fdInt + ") reading with tag " + tstr + " data=[" + dstr + "]");
             Taint.addTaintByteArray((byte[])buffer, tag);
         }
         return bytesRead;
@@ -173,14 +171,12 @@ public final class Posix implements Os {
             int fdInt = fd.getDescriptor();
             int tag = Taint.getTaintByteArray((byte[]) buffer);
             if (tag != Taint.TAINT_CLEAR) {
-                String dstr = new String((byte[]) buffer, bufferOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
-                // replace non-printable characters
-                dstr = dstr.replaceAll("\\p{C}", ".");
+                String dstr = Taint.dump((byte[]) buffer, bufferOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
                 Taint.logPathFromFd(fdInt);
                 String addr = (fd.hasName) ? fd.name : String.valueOf(fdInt);
                 String sink = (fd.hasName) ? Taint.SINK_TAG : "";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log(sink + "libcore.os.pwrite(" + addr + ") writing with tag " + tstr + " data[" + dstr + "]");
+                Taint.log(sink + "libcore.os.pwrite(" + addr + ") writing with tag " + tstr + " data=[" + dstr + "]");
                 Taint.addTaintFile(fdInt, tag);
             }
         }
@@ -211,11 +207,9 @@ public final class Posix implements Os {
         int fdInt = fd.getDescriptor();
         int tag = Taint.getTaintFile(fdInt);
         if (tag != Taint.TAINT_CLEAR) {
-            String dstr = new String((byte[])buffer, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
-            // replace non-printable characters
-            dstr = dstr.replaceAll("\\p{C}", ".");
+            String dstr = Taint.dump((byte[])buffer, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
             String tstr = "0x" + Integer.toHexString(tag);
-            Taint.log("libcore.os.read(" + fdInt + ") reading with tag " + tstr + " data[" + dstr + "]");
+            Taint.log("libcore.os.read(" + fdInt + ") reading with tag " + tstr + " data=[" + dstr + "]");
             Taint.addTaintByteArray((byte[])buffer, tag);
         }
         return bytesRead;
@@ -265,9 +259,7 @@ public final class Posix implements Os {
         if (buffer instanceof byte[]) {
             int tag = Taint.getTaintByteArray((byte[]) buffer);
     	    if (tag != Taint.TAINT_CLEAR) {
-                String dstr = new String((byte[]) buffer, byteOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
-                // replace non-printable characters
-                dstr = dstr.replaceAll("\\p{C}", ".");
+                String dstr = Taint.dump((byte[]) buffer, byteOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
                 String addr = (fd.hasName) ? fd.name : "unknown";
                 String sink = Taint.SINK_TAG;
     	        String tstr = "0x" + Integer.toHexString(tag);
@@ -349,14 +341,12 @@ public final class Posix implements Os {
             int tag = Taint.getTaintByteArray((byte[]) buffer);
             if (tag != Taint.TAINT_CLEAR) {
                 //We only display at most Taint.dataBytesToLog characters of the data in logcat, to avoid the overflow
-                String dstr = new String((byte[]) buffer, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
-                // replace non-printable characters
-                dstr = dstr.replaceAll("\\p{C}", ".");
+                String dstr = Taint.dump((byte[]) buffer, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
                 Taint.logPathFromFd(fdInt);
                 String addr = (fd.hasName) ? fd.name : String.valueOf(fdInt);
                 String sink = (fd.hasName) ? Taint.SINK_TAG : "";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log(sink + "libcore.os.write(" + addr + ") writing with tag " + tstr + " data[" + dstr + "]");
+                Taint.log(sink + "libcore.os.write(" + addr + ") writing with tag " + tstr + " data=[" + dstr + "]");
                 Taint.addTaintFile(fdInt, tag);
             }
         }

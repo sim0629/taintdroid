@@ -47,7 +47,7 @@ public final class Taint {
     public static final int TAINT_HISTORY       = 0x00008000;
     
     // how many bytes of tainted network output data to print to log?
-    public static final int dataBytesToLog = 100;
+    public static final int dataBytesToLog = 1600;
 
     /**
      * @hide
@@ -494,4 +494,19 @@ public final class Taint {
      *	    the file descriptor
      */
     native public static void logPeerFromFd(int fd);
+
+    /**
+     * @hide
+     */
+    public static String dump(byte[] buffer, int off, int len) {
+        byte[] ascii = new byte[len];
+        StringBuilder result = new StringBuilder();
+        for(int i = 0; i < len && off + i < buffer.length; i++) {
+            byte b = buffer[off + i];
+            result.append(String.format("%02X ", (int)b & 0xFF));
+            if(!(b >= 32 && b < 127)) b = (byte)'.';
+            ascii[i] = b;
+        }
+        return new String(ascii, 0, len) + " | " + result.toString();
+    }
 }

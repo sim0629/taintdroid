@@ -703,13 +703,9 @@ public class OpenSSLSocketImpl
             int tag = Taint.getTaintInt(oneByte);
             FileDescriptor fd = socket.getFileDescriptor$();
             if (tag != Taint.TAINT_CLEAR) {
-                String dstr = String.valueOf(oneByte);
-                // We only display at most Taint.dataBytesToLog characters in logcat of data
-                if (dstr.length() > Taint.dataBytesToLog) {
-                    dstr = dstr.substring(0, Taint.dataBytesToLog);                                                              
-                }
-                // replace non-printable characters
-                dstr = dstr.replaceAll("\\p{C}", ".");
+                byte[] buffer = new byte[1];
+                buffer[0] = (byte)oneByte;
+                String dstr = Taint.dump(buffer, 0, 1);
                 String addr = (fd.hasName) ? fd.name : "unknown";
                 String sink = Taint.SINK_TAG;
                 String tstr = "0x" + Integer.toHexString(tag);
@@ -736,14 +732,7 @@ public class OpenSSLSocketImpl
                 int tag = Taint.getTaintByteArray(buf);
                 FileDescriptor fd = socket.getFileDescriptor$();
                 if (tag != Taint.TAINT_CLEAR) {
-                    int disLen = byteCount;
-                    if (byteCount > Taint.dataBytesToLog) {
-                        disLen = Taint.dataBytesToLog;
-                    }
-                    // We only display at most Taint.dataBytesToLog characters in logcat
-                    String dstr = new String(buf, offset, disLen);
-                    // replace non-printable characters
-                    dstr = dstr.replaceAll("\\p{C}", ".");
+                    String dstr = Taint.dump(buf, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
                     String addr = (fd.hasName) ? fd.name : "unknown";
                     String sink = Taint.SINK_TAG;
                     String tstr = "0x" + Integer.toHexString(tag);
