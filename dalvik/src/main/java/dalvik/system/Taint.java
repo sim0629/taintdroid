@@ -50,6 +50,11 @@ public final class Taint {
     public static final int dataBytesToLog = 100;
 
     /**
+     * @hide
+     */
+    public static final String SINK_TAG = "[TaintSink] ";
+
+    /**
      * Updates the target String's taint tag.
      *
      * @param str

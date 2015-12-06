@@ -145,8 +145,10 @@ public final class Posix implements Os {
             if (tag != Taint.TAINT_CLEAR) {
                 int fdInt = fd.getDescriptor();
                 Taint.logPathFromFd(fdInt);
+                String addr = (fd.hasName) ? fd.name : String.valueOf(fdInt);
+                String sink = (fd.hasName) ? Taint.SINK_TAG : "";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.pwrite(" + fdInt + ") writing a direct ByteBuffer with tag " + tstr);
+                Taint.log(sink + "libcore.os.pwrite(" + addr + ") writing a direct ByteBuffer with tag " + tstr);
                 Taint.addTaintFile(fdInt, tag);
             }
 // end WITH_TAINT_TRACKING
@@ -175,8 +177,10 @@ public final class Posix implements Os {
                 // replace non-printable characters
                 dstr = dstr.replaceAll("\\p{C}", ".");
                 Taint.logPathFromFd(fdInt);
+                String addr = (fd.hasName) ? fd.name : String.valueOf(fdInt);
+                String sink = (fd.hasName) ? Taint.SINK_TAG : "";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.pwrite(" + fdInt + ") writing with tag " + tstr + " data[" + dstr + "]");
+                Taint.log(sink + "libcore.os.pwrite(" + addr + ") writing with tag " + tstr + " data[" + dstr + "]");
                 Taint.addTaintFile(fdInt, tag);
             }
         }
@@ -239,8 +243,9 @@ public final class Posix implements Os {
             int tag = buffer.getDirectByteBufferTaint();
             if (tag != Taint.TAINT_CLEAR) {
                 String addr = (fd.hasName) ? fd.name : "unknown";
+                String sink = Taint.SINK_TAG;
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.sendto(" + addr + ") received a ByteBuffer with tag " + tstr);
+                Taint.log(sink + "libcore.os.sendto(" + addr + ") received a ByteBuffer with tag " + tstr);
             }
 // end WITH_TAINT_TRACKING
             return sendtoBytes(fd, buffer, buffer.position(), buffer.remaining(), flags, inetAddress, port);
@@ -264,8 +269,9 @@ public final class Posix implements Os {
                 // replace non-printable characters
                 dstr = dstr.replaceAll("\\p{C}", ".");
                 String addr = (fd.hasName) ? fd.name : "unknown";
+                String sink = Taint.SINK_TAG;
     	        String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.send("+addr+") received data with tag " + tstr + " data=["+dstr+"] ");
+                Taint.log(sink + "libcore.os.send("+addr+") received data with tag " + tstr + " data=["+dstr+"] ");
             }
         }
 	return sendtoBytesImpl(fd, buffer, byteOffset, byteCount, flags, inetAddress, port);
@@ -313,8 +319,10 @@ public final class Posix implements Os {
             if (tag != Taint.TAINT_CLEAR) {
                 int fdInt = fd.getDescriptor();
                 Taint.logPathFromFd(fdInt);
+                String addr = (fd.hasName) ? fd.name : String.valueOf(fdInt);
+                String sink = (fd.hasName) ? Taint.SINK_TAG : "";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.write(" + fdInt + ") writing a direct ByteBuffer with tag " + tstr);
+                Taint.log(sink + "libcore.os.write(" + addr + ") writing a direct ByteBuffer with tag " + tstr);
                 Taint.addTaintFile(fdInt, tag);
             }
 // end WITH_TAINT_TRACKING
@@ -345,8 +353,10 @@ public final class Posix implements Os {
                 // replace non-printable characters
                 dstr = dstr.replaceAll("\\p{C}", ".");
                 Taint.logPathFromFd(fdInt);
+                String addr = (fd.hasName) ? fd.name : String.valueOf(fdInt);
+                String sink = (fd.hasName) ? Taint.SINK_TAG : "";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.write(" + fdInt + ") writing with tag " + tstr + " data[" + dstr + "]");
+                Taint.log(sink + "libcore.os.write(" + addr + ") writing with tag " + tstr + " data[" + dstr + "]");
                 Taint.addTaintFile(fdInt, tag);
             }
         }
