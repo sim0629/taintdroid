@@ -204,21 +204,11 @@ public class TaintDroidNotifyService extends Service {
         }
     }
 
-    private String stringToHex(String s) {
-        StringBuilder result = new StringBuilder();
-        for(int i = 0; i < s.length(); i++) {
-            result.append(String.format("%04X ", (int)s.charAt(i)));
-        }
-        return result.toString();
-    }
-
     private String get_data(String msg) {
         int start = msg.indexOf("data=[") + 6;
         String tail = msg.substring(start);
         if(tail.length() == 0) return "";
-        String data = tail.substring(0, tail.lastIndexOf(']'));
-        if(data.matches("\\A\\p{ASCII}*\\z")) return data;
-        return stringToHex(data);
+        return tail.substring(0, tail.lastIndexOf(']'));
     }
 
 	private int noti_id = 0;
