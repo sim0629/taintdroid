@@ -204,9 +204,21 @@ public class TaintDroidNotifyService extends Service {
         }
     }
 
+    private String stringToHex(String s) {
+        StringBuilder result = new StringBuilder();
+        for(int i = 0; i < s.length(); i++) {
+            result.append(String.format("%04X ", (int)s.charAt(i)));
+        }
+        return result.toString();
+    }
+
     private String get_data(String msg) {
         int start = msg.indexOf("data=[") + 6;
-        return msg.substring(start);
+        String tail = msg.substring(start);
+        if(tail.length() == 0) return "";
+        String data = tail.substring(0, tail.lastIndexOf(']'));
+        if(data.matches("\\A\\p{ASCII}*\\z")) return data;
+        return stringToHex(data);
     }
 
 	private int noti_id = 0;
@@ -248,9 +260,8 @@ public class TaintDroidNotifyService extends Service {
 		noti_id ++;
     }
 
-    private boolean isTaintedSend(String msg) {
-        // covers "libcore.os.send" and "libcore.os.sendto"
-        return msg.contains("libcore.os.send");
+    private boolean isTainted(String msg) {
+        return msg.contains("[TaintSink]");
     }
     
     private boolean isTaintedSSLSend(String msg) {
@@ -260,17 +271,17 @@ public class TaintDroidNotifyService extends Service {
     private void processLogEntry(LogEntry le) {
 		String timestamp = le.getTimestamp();
 		String msg = le.getMessage(); 
-        boolean taintedSend = isTaintedSend(msg);
-        boolean taintedSSLSend = isTaintedSSLSend(msg);
-        if(taintedSend || taintedSSLSend) {
+        boolean tainted = isTainted(msg);
+        if(tainted) {
             String ip = get_ipaddress(msg);
             String taint = get_taint(msg);
             String app = get_processname(le.getPid());
             String data = get_data(msg);
-            if (taintedSSLSend)
+            if (isTaintedSSLSend(msg))
             	ip=ip+" (SSL)";
 
-            sendTaintDroidNotification(le.hashCode(), ip, taint, app, data, timestamp);
+            Log.i("SGM", timestamp + " " + ip + " " + taint + " " + app + " [" + data + "]");
+            //sendTaintDroidNotification(le.hashCode(), ip, taint, app, data, timestamp);
         }
     }
 
