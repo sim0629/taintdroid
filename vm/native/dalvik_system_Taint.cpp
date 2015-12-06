@@ -663,13 +663,13 @@ static void Dalvik_dalvik_system_Taint_logPathFromFd(const u4* args,
     int fd = (int) args[0];
     pid_t pid;
     char ppath[20]; // these path lengths should be enough
-    char rpath[80];
+    char rpath[128] = {0};
     int err;
 
 
     pid = getpid();
     snprintf(ppath, 20, "/proc/%d/fd/%d", pid, fd);
-    err = readlink(ppath, rpath, 80);
+    err = readlink(ppath, rpath, 127);
     if (err >= 0) {
 	ALOGW("TaintLog: fd %d -> %s", fd, rpath);
     } else {
