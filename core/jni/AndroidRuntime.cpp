@@ -470,7 +470,7 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
       kEMIntPortable,
       kEMIntFast,
       kEMJitCompiler,
-    } executionMode = kEMDefault;
+    } executionMode = kEMIntPortable;
 
 
     property_get("dalvik.vm.checkjni", propBuf, "");
