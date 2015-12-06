@@ -516,6 +516,7 @@ GOTO_TARGET_DECL(exceptionThrown);
     {                                                                       \
         ArrayObject* arrayObj;                                              \
         u2 arrayInfo;                                                       \
+        u4 arrayIndex;                                                      \
         EXPORT_PC();                                                        \
         vdst = INST_AA(inst);                                               \
         arrayInfo = FETCH(1);                                               \
@@ -523,21 +524,22 @@ GOTO_TARGET_DECL(exceptionThrown);
         vsrc2 = arrayInfo >> 8;      /* index */                            \
         ILOGV("|aget%s v%d,v%d,v%d", (_opname), vdst, vsrc1, vsrc2);        \
         arrayObj = (ArrayObject*) GET_REGISTER(vsrc1);                      \
+        arrayIndex = (u4) GET_REGISTER(vsrc2);                              \
         if (!checkForNull((Object*) arrayObj))                              \
             GOTO_exceptionThrown();                                         \
-        if (GET_REGISTER(vsrc2) >= arrayObj->length) {                      \
+        if (arrayIndex >= arrayObj->length) {                               \
             dvmThrowArrayIndexOutOfBoundsException(                         \
-                arrayObj->length, GET_REGISTER(vsrc2));                     \
+                arrayObj->length, arrayIndex);                              \
             GOTO_exceptionThrown();                                         \
         }                                                                   \
         SET_REGISTER##_regsize(vdst,                                        \
             ((_type*)(void*)arrayObj->contents)[GET_REGISTER(vsrc2)]);      \
         ILOGV("+ AGET[%d]=%#x", GET_REGISTER(vsrc2), GET_REGISTER(vdst));   \
-/* ifdef WITH_TAINT_TRACKING */						                        \
-	SET_REGISTER_TAINT##_regsize(vdst,                                      \
-	    (GET_ARRAY_TAINT(arrayObj)|GET_REGISTER_TAINT(vsrc2)|               \
-         GET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2))));          \
-/* endif */								                                    \
+/* ifdef WITH_TAINT_TRACKING */                                             \
+        SET_REGISTER_TAINT##_regsize(vdst,                                  \
+            (GET_ARRAY_TAINT(arrayObj)|GET_REGISTER_TAINT(vsrc2)|           \
+             GET_ARRAY_ELEMENT_TAINT(arrayObj, arrayIndex)));               \
+/* endif */                                                                 \
     }                                                                       \
     FINISH(2);
 
@@ -563,13 +565,13 @@ GOTO_TARGET_DECL(exceptionThrown);
         ILOGV("+ APUT[%d]=0x%08x", GET_REGISTER(vsrc2), GET_REGISTER(vdst));\
         ((_type*)(void*)arrayObj->contents)[GET_REGISTER(vsrc2)] =          \
             GET_REGISTER##_regsize(vdst);                                   \
-/* ifdef WITH_TAINT_TRACKING */						                        \
-	SET_ARRAY_TAINT(arrayObj,                                               \
-		(GET_ARRAY_TAINT(arrayObj) |                                        \
-		 GET_REGISTER_TAINT##_regsize(vsrc2)) );                            \
-    SET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2),                  \
-         GET_REGISTER_TAINT##_regsize(vdst) );                              \
-/* endif */								                                    \
+/* ifdef WITH_TAINT_TRACKING */                                             \
+        SET_ARRAY_TAINT(arrayObj,                                           \
+            (GET_ARRAY_TAINT(arrayObj) |                                    \
+             GET_REGISTER_TAINT##_regsize(vsrc2)) );                        \
+        SET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2),              \
+            GET_REGISTER_TAINT##_regsize(vdst) );                           \
+/* endif */                                                                 \
     }                                                                       \
     FINISH(2);
 
