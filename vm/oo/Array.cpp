@@ -47,20 +47,34 @@ static ArrayObject* allocArray(ClassObject* arrayClass, size_t length,
     assert((elemWidth & (elemWidth - 1)) == 0);
     size_t elementShift = sizeof(size_t) * CHAR_BIT - 1 - CLZ(elemWidth);
     size_t elementSize = length << elementShift;
+#ifdef WITH_TAINT_TRACKING
+    size_t taintShift = sizeof(size_t) * CHAR_BIT - 1 - CLZ(sizeof(Taint));
+    size_t taintSize = length << taintShift;
+#endif
     size_t headerSize = OFFSETOF_MEMBER(ArrayObject, contents);
     size_t totalSize = elementSize + headerSize;
-    if (elementSize >> elementShift != length || totalSize < elementSize) {
+    if (elementSize >> elementShift != length || totalSize < elementSize
+#ifdef WITH_TAINT_TRACKING
+        || taintSize >> taintShift != length || totalSize + taintSize < taintSize
+#endif
+        ) {
         std::string descriptor(dvmHumanReadableDescriptor(arrayClass->descriptor));
         dvmThrowExceptionFmt(gDvm.exOutOfMemoryError,
                 "%s of length %zd exceeds the VM limit", descriptor.c_str(), length);
         return NULL;
     }
+#ifdef WITH_TAINT_TRACKING
+    totalSize += taintSize;
+#endif
     ArrayObject* newArray = (ArrayObject*)dvmMalloc(totalSize, allocFlags);
     if (newArray != NULL) {
         DVM_OBJECT_INIT(newArray, arrayClass);
         newArray->length = length;
 #ifdef WITH_TAINT_TRACKING
         newArray->taint.tag = TAINT_CLEAR;
+
+        u1 *end = (u1 *)(void *)newArray->contents + elementSize;
+        newArray->taintContents = (Taint *)end;
 #endif
         dvmTrackAllocation(arrayClass, totalSize);
     }
@@ -496,6 +510,9 @@ bool dvmCopyObjectArray(ArrayObject* dstArray, const ArrayObject* srcArray,
     ClassObject* dstElemClass)
 {
     Object** src = (Object**)(void*)srcArray->contents;
+#ifdef WITH_TAINT_TRACKING
+    Taint* srcTaint = srcArray->taintContents;
+#endif
     u4 length, count;
 
     assert(srcArray->length == dstArray->length);
@@ -511,6 +528,9 @@ bool dvmCopyObjectArray(ArrayObject* dstArray, const ArrayObject* srcArray,
             return false;
         }
         dvmSetObjectArrayElement(dstArray, count, src[count]);
+#ifdef WITH_TAINT_TRACKING
+        dstArray->taintContents[count] = srcTaint[count];
+#endif
     }
 
     return true;
@@ -526,6 +546,10 @@ bool dvmUnboxObjectArray(ArrayObject* dstArray, const ArrayObject* srcArray,
 {
     Object** src = (Object**)(void*)srcArray->contents;
     void* dst = (void*)dstArray->contents;
+#ifdef WITH_TAINT_TRACKING
+    Taint* srcTaint = srcArray->taintContents;
+    Taint* dstTaint = dstArray->taintContents;
+#endif
     u4 count = dstArray->length;
     PrimitiveType typeIndex = dstElemClass->primitiveType;
 
@@ -586,6 +610,9 @@ bool dvmUnboxObjectArray(ArrayObject* dstArray, const ArrayObject* srcArray,
             dvmAbort();
         }
 
+#ifdef WITH_TAINT_TRACKING
+        *dstTaint++ = *srcTaint++;
+#endif
         src++;
     }
 

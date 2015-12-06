@@ -918,6 +918,7 @@ Object* dvmInvokeMethod(Object* obj, const Method* method,
     for (int i = 0; i < argListLength; i++) {
 #ifdef WITH_TAINT_TRACKING
         int tag = dvmGetPrimitiveTaint(*args, *types);
+        tag |= argList->taintContents[i].tag;
 #endif
         int width = dvmConvertArgument(*args++, *types++, ins);
         if (width < 0) {

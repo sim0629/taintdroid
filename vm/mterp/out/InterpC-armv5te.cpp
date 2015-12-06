@@ -419,6 +419,9 @@ static inline void putDoubleToArrayTaint(u4* ptr, int idx, double dval)
 # define GET_ARRAY_TAINT(_arr)		      ((_arr)->taint.tag)
 # define SET_ARRAY_TAINT(_arr, _val)	      ((_arr)->taint.tag = (u4)(_val))
 
+# define GET_ARRAY_ELEMENT_TAINT(_arr, _idx)       ((_arr)->taintContents[_idx].tag)
+# define SET_ARRAY_ELEMENT_TAINT(_arr, _idx, _val) ((_arr)->taintContents[_idx].tag = (u4)(_val))
+
 /* Return value taint (assumes rtaint variable is in scope */
 # define GET_RETURN_TAINT()		      (rtaint.tag)
 # define SET_RETURN_TAINT(_val)		      (rtaint.tag = (u4)(_val))
@@ -435,6 +438,8 @@ static inline void putDoubleToArrayTaint(u4* ptr, int idx, double dval)
 # define SET_REGISTER_TAINT_AS_OBJECT(_idx, _val)   ((void)0)
 # define GET_ARRAY_TAINT(_field)                    ((void)0)
 # define SET_ARRAY_TAINT(_field, _val)              ((void)0)
+# define GET_ARRAY_ELEMENT_TAINT(_arr, _idx)        ((void)0)
+# define SET_ARRAY_ELEMENT_TAINT(_arr, _idx, _val)  ((void)0)
 # define GET_RETURN_TAINT()			    ((void)0)
 # define SET_RETURN_TAINT(_val)			    ((void)0)
 #endif
@@ -1227,7 +1232,8 @@ GOTO_TARGET_DECL(exceptionThrown);
         ILOGV("+ AGET[%d]=%#x", GET_REGISTER(vsrc2), GET_REGISTER(vdst));   \
 /* ifdef WITH_TAINT_TRACKING */						                        \
 	SET_REGISTER_TAINT##_regsize(vdst,                                      \
-	    (GET_ARRAY_TAINT(arrayObj)|GET_REGISTER_TAINT(vsrc2)));             \
+	    (GET_ARRAY_TAINT(arrayObj)|GET_REGISTER_TAINT(vsrc2)|               \
+         GET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2))));          \
 /* endif */								                                    \
     }                                                                       \
     FINISH(2);
@@ -1257,7 +1263,9 @@ GOTO_TARGET_DECL(exceptionThrown);
 /* ifdef WITH_TAINT_TRACKING */						                        \
 	SET_ARRAY_TAINT(arrayObj,                                               \
 		(GET_ARRAY_TAINT(arrayObj) |                                        \
-		 GET_REGISTER_TAINT##_regsize(vdst)) );                             \
+		 GET_REGISTER_TAINT##_regsize(vsrc2)) );                            \
+    SET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2),                  \
+         GET_REGISTER_TAINT##_regsize(vdst) );                              \
 /* endif */								                                    \
     }                                                                       \
     FINISH(2);

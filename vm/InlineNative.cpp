@@ -158,8 +158,8 @@ bool javaLangString_charAt(u4 arg0, u4 arg1, u4 arg2, u4 arg3,
 
         pResult->i = ((const u2*)(void*)chars->contents)[arg1 + offset];
 #ifdef WITH_TAINT_TRACKING
-	// rtaint <- taint(string) | taint(index)
-	rtaint->tag = chars->taint.tag | arg1_taint;
+	// rtaint <- taint(string) | taint(string[index]) | taint(index)
+	rtaint->tag = chars->taint.tag | chars->taintContents[arg1 + offset].tag | arg1_taint;
 #endif /*WITH_TAINT_TRACKING*/
         return true;
     }

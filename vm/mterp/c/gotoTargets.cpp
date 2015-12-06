@@ -80,16 +80,20 @@ GOTO_TARGET(filledNewArray, bool methodCallRange, bool)
          */
         contents = (u4*)(void*)newArray->contents;
         if (methodCallRange) {
-            for (i = 0; i < vsrc1; i++)
+            for (i = 0; i < vsrc1; i++) {
                 contents[i] = GET_REGISTER(vdst+i);
+                newArray->taintContents[i].tag = GET_REGISTER_TAINT(vdst+i);
+            }
         } else {
             assert(vsrc1 <= 5);
             if (vsrc1 == 5) {
                 contents[4] = GET_REGISTER(arg5);
+                newArray->taintContents[4].tag = GET_REGISTER_TAINT(arg5);
                 vsrc1--;
             }
             for (i = 0; i < vsrc1; i++) {
                 contents[i] = GET_REGISTER(vdst & 0x0f);
+                newArray->taintContents[i].tag = GET_REGISTER_TAINT(vdst & 0x0f);
                 vdst >>= 4;
             }
         }

@@ -535,7 +535,8 @@ GOTO_TARGET_DECL(exceptionThrown);
         ILOGV("+ AGET[%d]=%#x", GET_REGISTER(vsrc2), GET_REGISTER(vdst));   \
 /* ifdef WITH_TAINT_TRACKING */						                        \
 	SET_REGISTER_TAINT##_regsize(vdst,                                      \
-	    (GET_ARRAY_TAINT(arrayObj)|GET_REGISTER_TAINT(vsrc2)));             \
+	    (GET_ARRAY_TAINT(arrayObj)|GET_REGISTER_TAINT(vsrc2)|               \
+         GET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2))));          \
 /* endif */								                                    \
     }                                                                       \
     FINISH(2);
@@ -565,7 +566,9 @@ GOTO_TARGET_DECL(exceptionThrown);
 /* ifdef WITH_TAINT_TRACKING */						                        \
 	SET_ARRAY_TAINT(arrayObj,                                               \
 		(GET_ARRAY_TAINT(arrayObj) |                                        \
-		 GET_REGISTER_TAINT##_regsize(vdst)) );                             \
+		 GET_REGISTER_TAINT##_regsize(vsrc2)) );                            \
+    SET_ARRAY_ELEMENT_TAINT(arrayObj, GET_REGISTER(vsrc2),                  \
+         GET_REGISTER_TAINT##_regsize(vdst) );                              \
 /* endif */								                                    \
     }                                                                       \
     FINISH(2);

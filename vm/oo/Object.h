@@ -280,6 +280,7 @@ struct ArrayObject : Object {
 
 #ifdef WITH_TAINT_TRACKING
     Taint           taint;
+    Taint*          taintContents;
 #endif
     /*
      * Array contents; actual size is (length * sizeof(type)).  This is

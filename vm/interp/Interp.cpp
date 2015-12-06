@@ -1220,6 +1220,9 @@ bool dvmInterpHandleFillArrayData(ArrayObject* arrayObj, const u2* arrayData)
     }
     copySwappedArrayData(arrayObj->contents, &arrayData[4], size, width);
 #ifdef WITH_TAINT_TRACKING
+    for (u4 i = 0; i < size; i++) {
+        arrayObj->taintContents[i].tag = TAINT_CLEAR;
+    }
     if (arrayObj->length == size) {
     	arrayObj->taint.tag = TAINT_CLEAR;
     }
