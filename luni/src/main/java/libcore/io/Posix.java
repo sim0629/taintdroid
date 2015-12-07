@@ -187,7 +187,7 @@ public final class Posix implements Os {
 		
         if (buffer instanceof byte[]) {
             int fdInt = fd.getDescriptor();
-            int tag = Taint.getTaintByteArray((byte[]) buffer);
+            int tag = Taint.getTaintByteArrayWithElements((byte[]) buffer, bufferOffset, byteCount);
             if (tag != Taint.TAINT_CLEAR) {
                 String dstr = Taint.dump((byte[]) buffer, bufferOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
                 Taint.logPathFromFd(fdInt);
@@ -275,7 +275,7 @@ public final class Posix implements Os {
     private native int sendtoBytesImpl(FileDescriptor fd, Object buffer, int byteOffset, int byteCount, int flags, InetAddress inetAddress, int port) throws ErrnoException, SocketException;
     private int sendtoBytes(FileDescriptor fd, Object buffer, int byteOffset, int byteCount, int flags, InetAddress inetAddress, int port) throws ErrnoException, SocketException {
         if (buffer instanceof byte[]) {
-            int tag = Taint.getTaintByteArray((byte[]) buffer);
+            int tag = Taint.getTaintByteArrayWithElements((byte[]) buffer, byteOffset, byteCount);
     	    if (tag != Taint.TAINT_CLEAR) {
                 String dstr = Taint.dump((byte[]) buffer, byteOffset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));
                 String addr = (fd.hasName) ? fd.name : "unknown";
@@ -356,7 +356,7 @@ public final class Posix implements Os {
 	
         if (buffer instanceof byte[]) {
             int fdInt = fd.getDescriptor();
-            int tag = Taint.getTaintByteArray((byte[]) buffer);
+            int tag = Taint.getTaintByteArrayWithElements((byte[]) buffer, offset, byteCount);
             if (tag != Taint.TAINT_CLEAR) {
                 //We only display at most Taint.dataBytesToLog characters of the data in logcat, to avoid the overflow
                 String dstr = Taint.dump((byte[]) buffer, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));

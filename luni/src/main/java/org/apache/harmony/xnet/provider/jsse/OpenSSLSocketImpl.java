@@ -729,7 +729,7 @@ public class OpenSSLSocketImpl
                     return;
                 }
 // begin WITH_TAINT_TRACKING
-                int tag = Taint.getTaintByteArray(buf);
+                int tag = Taint.getTaintByteArrayWithElements(buf, offset, byteCount);
                 FileDescriptor fd = socket.getFileDescriptor$();
                 if (tag != Taint.TAINT_CLEAR) {
                     String dstr = Taint.dump(buf, offset, ((byteCount > Taint.dataBytesToLog) ? Taint.dataBytesToLog : byteCount));

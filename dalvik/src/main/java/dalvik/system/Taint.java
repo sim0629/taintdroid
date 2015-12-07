@@ -498,6 +498,17 @@ public final class Taint {
     /**
      * @hide
      */
+    public static int getTaintByteArrayWithElements(byte[] buffer, int off, int len) {
+        int taint = getTaintByteArray(buffer);
+        for(int i = 0; i < len && off + i < buffer.length; i++) {
+            taint |= getTaintByte(buffer[off + i]);
+        }
+        return taint;
+    }
+
+    /**
+     * @hide
+     */
     public static String dump(byte[] buffer, int off, int len) {
         byte[] ascii = new byte[len];
         StringBuilder result = new StringBuilder();
