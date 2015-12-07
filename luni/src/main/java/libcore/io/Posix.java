@@ -371,6 +371,27 @@ public final class Posix implements Os {
         int bytesWritten = writeBytesImpl(fd, buffer, offset, byteCount);
         return bytesWritten;
     }
+    //public native int writev(FileDescriptor fd, Object[] buffers, int[] offsets, int[] byteCounts) throws ErrnoException;
+    public native int writevImpl(FileDescriptor fd, Object[] buffers, int[] offsets, int[] byteCounts) throws ErrnoException;
+    public int writev(FileDescriptor fd, Object[] buffers, int[] offsets, int[] byteCounts) throws ErrnoException {
+        if (fd != null && buffers != null && offsets != null && byteCounts != null &&
+            buffers.length == offsets.length && buffers.length == byteCounts.length) {
+            int fdInt = fd.getDescriptor();
+            String addr = fd.hasName ? fd.name : String.valueOf(fdInt);
+            String sink = fd.hasName ? Taint.SINK_TAG : "";
+            for (int i = 0; i < buffers.length; i++) {
+                if (!(buffers[i] instanceof byte[])) continue;
+                byte[] buffer = (byte[])buffers[i]; int offset = offsets[i]; int byteCount = byteCounts[i];
+                int tag = Taint.getTaintByteArrayWithElements(buffer, offset, byteCount);
+                if (tag == Taint.TAINT_CLEAR) continue;
+                String dstr = Taint.dump(buffer, offset, (byteCount > Taint.dataBytesToLog ? Taint.dataBytesToLog : byteCount));
+                Taint.logPathFromFd(fdInt);
+                String tstr = "0x" + Integer.toHexString(tag);
+                Taint.log(sink + "libcore.os.writev(" + addr + ") writing with tag " + tstr + " data=[" + dstr + "]");
+                Taint.addTaintFile(fdInt, tag);
+            }
+        }
+        return writevImpl(fd, buffers, offsets, byteCounts);
+    }
 //end WITH_TAINT_TRACKING
-    public native int writev(FileDescriptor fd, Object[] buffers, int[] offsets, int[] byteCounts) throws ErrnoException;
 }

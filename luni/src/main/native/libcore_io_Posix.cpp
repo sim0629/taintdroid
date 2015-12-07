@@ -1407,7 +1407,10 @@ static jint Posix_writeBytesImpl(JNIEnv* env, jobject, jobject javaFd, jbyteArra
     return throwIfMinusOne(env, "write", TEMP_FAILURE_RETRY(write(fd, bytes.get() + byteOffset, byteCount)));
 }
 
-static jint Posix_writev(JNIEnv* env, jobject, jobject javaFd, jobjectArray buffers, jintArray offsets, jintArray byteCounts) {
+/// begin WITH_TAINT_TRACKING
+//static jint Posix_writev(JNIEnv* env, jobject, jobject javaFd, jobjectArray buffers, jintArray offsets, jintArray byteCounts) {
+static jint Posix_writevImpl(JNIEnv* env, jobject, jobject javaFd, jobjectArray buffers, jintArray offsets, jintArray byteCounts) {
+// end WITH_TAINT_TRACKING
     IoVec<ScopedBytesRO> ioVec(env, env->GetArrayLength(buffers));
     if (!ioVec.init(buffers, offsets, byteCounts)) {
         return -1;
@@ -1532,8 +1535,9 @@ static JNINativeMethod gMethods[] = {
 // begin WITH_TAINT_TRACKING
     //NATIVE_METHOD(Posix, writeBytes, "(Ljava/io/FileDescriptor;Ljava/lang/Object;II)I"),
     NATIVE_METHOD(Posix, writeBytesImpl, "(Ljava/io/FileDescriptor;Ljava/lang/Object;II)I"),
+    //NATIVE_METHOD(Posix, writev, "(Ljava/io/FileDescriptor;[Ljava/lang/Object;[I[I)I"),
+    NATIVE_METHOD(Posix, writevImpl, "(Ljava/io/FileDescriptor;[Ljava/lang/Object;[I[I)I"),
 // end WITH_TAINT_TRACKING
-    NATIVE_METHOD(Posix, writev, "(Ljava/io/FileDescriptor;[Ljava/lang/Object;[I[I)I"),
 };
 void register_libcore_io_Posix(JNIEnv* env) {
     jniRegisterNativeMethods(env, "libcore/io/Posix", gMethods, NELEM(gMethods));
