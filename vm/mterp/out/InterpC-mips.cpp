@@ -2518,6 +2518,7 @@ GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall,
             TAINT_LOCATION_NET |
             TAINT_LOCATION_LAST |
             TAINT_CAMERA |
+            TAINT_HISTORY |
             0;
         if (tag & interest) {
             std::vector<std::string> descriptions;
