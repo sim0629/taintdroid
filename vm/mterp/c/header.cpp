@@ -20,6 +20,10 @@
 #include "mterp/Mterp.h"
 #include <math.h>                   // needed for fmod, fmodf
 #include "mterp/common/FindInterface.h"
+#include <string>
+#include <vector>
+#include <algorithm>
+#include "alloc/Heap.h"
 
 /*
  * Configuration defines.  These affect the C implementations, i.e. the
@@ -538,4 +542,67 @@ static inline bool checkForNullExportPC(Object* obj, u4* fp, const u2* pc)
     }
 #endif
     return true;
+}
+
+static std::string u4int_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%d(%x)", j->i, *val);
+    return buff;
+}
+
+static std::string u4char_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%d('%c')", (int)j->z, (char)j->z);
+    return buff;
+}
+
+static std::string u4short_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%hd(%hx)", j->c, j->s);
+    return buff;
+}
+
+static std::string u4byte_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%d(%x)", (int)j->z, (unsigned int)j->z);
+    return buff;
+}
+
+static std::string u4float_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%g", (double)j->f);
+    return buff;
+}
+
+static std::string u4double_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%g", j->d);
+    return buff;
+}
+
+static std::string u4long_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%lld(%llx)", j->j, (u8)j->j);
+    return buff;
+}
+
+static std::string getMethodString(const Method *method)
+{
+    std::string res;
+    if (method == NULL) return res;
+    const ClassObject *clazz = method->clazz;
+    if (clazz != NULL && clazz->descriptor != NULL) {
+        res += (clazz->descriptor + 1);
+    }
+    if (!res.empty() && *res.rbegin() == ';') res.erase(res.size()-1);
+    res += "::";
+    res += method->name;
+    return res;
 }

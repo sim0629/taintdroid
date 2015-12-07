@@ -27,6 +27,10 @@
 #include "mterp/Mterp.h"
 #include <math.h>                   // needed for fmod, fmodf
 #include "mterp/common/FindInterface.h"
+#include <string>
+#include <vector>
+#include <algorithm>
+#include "alloc/Heap.h"
 
 /*
  * Configuration defines.  These affect the C implementations, i.e. the
@@ -545,6 +549,69 @@ static inline bool checkForNullExportPC(Object* obj, u4* fp, const u2* pc)
     }
 #endif
     return true;
+}
+
+static std::string u4int_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%d(%x)", j->i, *val);
+    return buff;
+}
+
+static std::string u4char_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%d('%c')", (int)j->z, (char)j->z);
+    return buff;
+}
+
+static std::string u4short_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%hd(%hx)", j->c, j->s);
+    return buff;
+}
+
+static std::string u4byte_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%d(%x)", (int)j->z, (unsigned int)j->z);
+    return buff;
+}
+
+static std::string u4float_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%g", (double)j->f);
+    return buff;
+}
+
+static std::string u4double_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%g", j->d);
+    return buff;
+}
+
+static std::string u4long_to_string(u4 *val) {
+    char buff[64];
+    JValue *j = (JValue *)val;
+    sprintf(buff, "%lld(%llx)", j->j, (u8)j->j);
+    return buff;
+}
+
+static std::string getMethodString(const Method *method)
+{
+    std::string res;
+    if (method == NULL) return res;
+    const ClassObject *clazz = method->clazz;
+    if (clazz != NULL && clazz->descriptor != NULL) {
+        res += (clazz->descriptor + 1);
+    }
+    if (!res.empty() && *res.rbegin() == ';') res.erase(res.size()-1);
+    res += "::";
+    res += method->name;
+    return res;
 }
 
 /* File: portable/stubdefs.cpp */
@@ -4269,6 +4336,7 @@ GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall,
 
         u4* outs;
         int i;
+        int argWords = 0;
 #ifdef WITH_TAINT_TRACKING
         bool nativeTarget = dvmIsNativeMethod(methodToCall);
 #endif
@@ -4282,6 +4350,7 @@ GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall,
             assert(vsrc1 <= curMethod->outsSize);
             assert(vsrc1 == methodToCall->insSize);
             outs = OUTS_FROM_FP(fp, vsrc1);
+            argWords = vsrc1;
 #ifdef WITH_TAINT_TRACKING
             if (nativeTarget) {
             	for (i = 0; i < vsrc1; i++) {
@@ -4328,6 +4397,7 @@ GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall,
             // This version executes fewer instructions but is larger
             // overall.  Seems to be a teensy bit faster.
             assert((vdst >> 16) == 0);  // 16 bits -or- high 16 bits clear
+            argWords = count;
 #ifdef WITH_TAINT_TRACKING
             if (nativeTarget) {
             	switch (count) {
@@ -4392,6 +4462,170 @@ GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall,
 #endif /* WITH_TAINT_TRACKING */
 #endif
         }
+    /*
+     * This part prints out tainted method invocations
+     */
+#ifdef WITH_TAINT_TRACKING
+    if (!nativeTarget) {
+        const size_t argCount = dexProtoGetParameterCount(&methodToCall->prototype);
+        const char* const desc = &methodToCall->shorty[1]; /* parameter description */
+        size_t outIndex = 0;
+        u4 tag = 0;
+
+        bool is_static = dvmIsStaticMethod(methodToCall);
+        if (!is_static) {
+            /* move over `this' pointer */
+            outIndex += 2;
+        }
+
+        for (size_t argInd = 0; argInd < argCount; argInd++) {
+            char param = desc[argInd];
+            if (param == '\0') break;
+            switch (param) {
+            case 'I': /* int */
+            case 'C': /* char */
+            case 'B': /* byte */
+            case 'Z': /* boolean */
+            case 'F': /* float */
+            case 'S': /* short */
+                tag |= outs[outIndex+1];
+                outIndex += 2;
+                break;
+            case 'D': /* double */
+            case 'J': /* long */
+                tag |= outs[outIndex+1];
+                outIndex += 2;
+                tag |= outs[outIndex+1];
+                outIndex += 2;
+                break;
+            case '[': /* array? */
+            case 'L': /* object */
+                if (dvmIsValidObject((Object*)outs[outIndex])) {
+                    Object* obj = (Object*)outs[outIndex];
+                    ClassObject* clazz = (obj != NULL) ? obj->clazz : NULL;
+                    if (obj == NULL || clazz == NULL || clazz->descriptor == NULL) {
+                    } else if (dvmIsArrayClass(obj->clazz)){
+                        ArrayObject* array = (ArrayObject*)obj;
+                        tag |= array->taint.tag;
+                    } else {
+                        for (ClassObject* clazz = obj->clazz; clazz != NULL; clazz = clazz->super) {
+                            for (int i = 0; i < clazz->ifieldCount; i++) {
+                                const InstField *field = &clazz->ifields[i];
+                                int fieldOffset = field->byteOffset;
+                                char sigchar = field->signature[0];
+                                if (sigchar == 'J' || sigchar == 'D') {
+                                    tag |= dvmGetFieldTaintWide(obj, fieldOffset);
+                                } else {
+                                    tag |= dvmGetFieldTaint(obj, fieldOffset);
+                                }
+                            }
+                        }
+                    }
+                }
+                tag |= outs[outIndex+1];
+                outIndex += 2;
+                break;
+            default:
+                /* unknown, just exit */
+                break;
+            }
+        }
+
+        //ALOGW("[KCM] stage FIN\n");
+        u4 interest =
+            TAINT_LOCATION |
+            TAINT_LOCATION_GPS |
+            TAINT_LOCATION_NET |
+            TAINT_LOCATION_LAST |
+            TAINT_CAMERA |
+            0;
+        if (tag & interest) {
+            std::vector<std::string> descriptions;
+            descriptions.push_back(getMethodString(curMethod));
+            descriptions.push_back(" -> ");
+            descriptions.push_back(getMethodString(methodToCall));
+            descriptions.push_back("(");
+
+            outIndex = (is_static ? 2 : 0);
+
+            for (size_t argInd = 0; argInd < argCount; argInd++) {
+                char param = desc[argInd];
+                if (param == '\0') break;
+                if (argInd > 0) descriptions.push_back(",");
+                u4 buff[2];
+                switch (param) {
+                case 'I': /* int */
+                    descriptions.push_back(u4int_to_string(&outs[outIndex]));
+                    outIndex += 2;
+                    break;
+                case 'C': /* char */
+                    descriptions.push_back(u4char_to_string(&outs[outIndex]));
+                    outIndex += 2;
+                    break;
+                case 'B': /* byte */
+                    descriptions.push_back(u4byte_to_string(&outs[outIndex]));
+                    outIndex += 2;
+                    break;
+                case 'Z': /* boolean */
+                    descriptions.push_back(u4byte_to_string(&outs[outIndex]));
+                    outIndex += 2;
+                    break;
+                case 'F': /* float */
+                    descriptions.push_back(u4float_to_string(&outs[outIndex]));
+                    outIndex += 2;
+                    break;
+                case 'S': /* short */
+                    descriptions.push_back(u4short_to_string(&outs[outIndex]));
+                    outIndex += 2;
+                    break;
+                case 'D': /* double */
+                case 'J': /* long */
+                    for (int b = 0; b < 2; b++) {
+                        buff[b] = outs[outIndex];
+                        outIndex += 2;
+                    }
+                    if (param == 'D') descriptions.push_back(u4double_to_string(buff));
+                    if (param == 'J') descriptions.push_back(u4long_to_string(buff));
+                    break;
+                case '[': /* array? */
+                case 'L': /* object */
+                    if (dvmIsValidObject((Object*)outs[outIndex])) {
+                        Object* obj = (Object*)outs[outIndex];
+                        ClassObject* clazz = (obj != NULL) ? obj->clazz : NULL;
+                        if (obj == NULL || clazz == NULL || clazz->descriptor == NULL) {
+                            ALOGW("[KCM] unknown class for an arg\n");
+                        } else if (dvmIsArrayClass(obj->clazz)){
+                            descriptions.push_back(clazz->descriptor+1);
+                        } else {
+                            descriptions.push_back(clazz->descriptor+1);
+                        }
+                    } else {
+                        descriptions.push_back("<<invalid>>");
+                    }
+                    outIndex += 2;
+                    break;
+                default:
+                    /* unknown, just exit */
+                    break;
+                }
+            }
+            descriptions.push_back("); ");
+
+            /* TAINTED method call found */
+            std::string res = "";
+            for (size_t i = 0; i < descriptions.size(); i++) {
+                res += descriptions[i];
+            }
+            res += "[tag: ";
+            for (int i = 0; i < 32; i++) {
+                res.push_back( (tag & (1u << i)) ? '1' : '0');
+            }
+            res += "]";
+            ALOGW("[KCM taint] %s\n", res.c_str());
+        }
+    }
+#endif /* WITH_TAINT_TRACKING */
+
     }
 
     /*

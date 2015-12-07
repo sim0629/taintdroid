@@ -8822,7 +8822,7 @@ dvmAsmSisterStart:
 1:  ldr     r3, [r2], #4                @ r3<- *r2++
     subs    r9, r9, #1                  @ count--
     str     r3, [r0], #4                @ *contents++ = vX
-    add     r2, r2, #4                  @ skip taint tag TODO fixme?
+    add     r2, r2, #4                  @ skip taint
 //end WITH_TAINT_TRACKING
     bpl     1b
     @ continue at 2
@@ -8919,7 +8919,7 @@ dvmAsmSisterStart:
 1:  ldr     r3, [r2], #4                @ r3<- *r2++
     subs    r9, r9, #1                  @ count--
     str     r3, [r0], #4                @ *contents++ = vX
-    add     r2, r2, #4                  @ skip taint tag TODO fixme?
+    add     r2, r2, #4                  @ skip taint
 //end WITH_TAINT_TRACKING
     bpl     1b
     @ continue at 2
