@@ -473,13 +473,19 @@ static void Posix_connectImpl(JNIEnv* env, jobject, jobject javaFd, jobject java
     (void) NET_FAILURE_RETRY(env, int, connect, javaFd, sa, sa_len);
 }
 
-static jobject Posix_dup(JNIEnv* env, jobject, jobject javaOldFd) {
+// begin WITH_TAINT_TRACKING
+//static jobject Posix_dup(JNIEnv* env, jobject, jobject javaOldFd) {
+static jobject Posix_dupImpl(JNIEnv* env, jobject, jobject javaOldFd) {
+// end WITH_TAINT_TRACKING
     int oldFd = jniGetFDFromFileDescriptor(env, javaOldFd);
     int newFd = throwIfMinusOne(env, "dup", TEMP_FAILURE_RETRY(dup(oldFd)));
     return (newFd != -1) ? jniCreateFileDescriptor(env, newFd) : NULL;
 }
 
-static jobject Posix_dup2(JNIEnv* env, jobject, jobject javaOldFd, jint newFd) {
+// begin WITH_TAINT_TRACKING
+//static jobject Posix_dup2(JNIEnv* env, jobject, jobject javaOldFd, jint newFd) {
+static jobject Posix_dup2Impl(JNIEnv* env, jobject, jobject javaOldFd, jint newFd) {
+// end WITH_TAINT_TRACKING
     int oldFd = jniGetFDFromFileDescriptor(env, javaOldFd);
     int fd = throwIfMinusOne(env, "dup2", TEMP_FAILURE_RETRY(dup2(oldFd, newFd)));
     return (fd != -1) ? jniCreateFileDescriptor(env, fd) : NULL;
@@ -1420,9 +1426,11 @@ static JNINativeMethod gMethods[] = {
     // begin WITH_TAINT_TRACKING
     //NATIVE_METHOD(Posix, connect, "(Ljava/io/FileDescriptor;Ljava/net/InetAddress;I)V"),
     NATIVE_METHOD(Posix, connectImpl, "(Ljava/io/FileDescriptor;Ljava/net/InetAddress;I)V"),
+    //NATIVE_METHOD(Posix, dup, "(Ljava/io/FileDescriptor;)Ljava/io/FileDescriptor;"),
+    NATIVE_METHOD(Posix, dupImpl, "(Ljava/io/FileDescriptor;)Ljava/io/FileDescriptor;"),
+    //NATIVE_METHOD(Posix, dup2, "(Ljava/io/FileDescriptor;I)Ljava/io/FileDescriptor;"),
+    NATIVE_METHOD(Posix, dup2Impl, "(Ljava/io/FileDescriptor;I)Ljava/io/FileDescriptor;"),
 // end WITH_TAINT_TRACKING
-    NATIVE_METHOD(Posix, dup, "(Ljava/io/FileDescriptor;)Ljava/io/FileDescriptor;"),
-    NATIVE_METHOD(Posix, dup2, "(Ljava/io/FileDescriptor;I)Ljava/io/FileDescriptor;"),
     NATIVE_METHOD(Posix, environ, "()[Ljava/lang/String;"),
     NATIVE_METHOD(Posix, execv, "(Ljava/lang/String;[Ljava/lang/String;)V"),
     NATIVE_METHOD(Posix, execve, "(Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;)V"),

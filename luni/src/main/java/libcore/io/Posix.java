@@ -50,9 +50,27 @@ public final class Posix implements Os {
     	}
         connectImpl(fd, address, port);
     }
+    //public native FileDescriptor dup(FileDescriptor oldFd) throws ErrnoException;
+    public native FileDescriptor dupImpl(FileDescriptor oldFd) throws ErrnoException;
+    public FileDescriptor dup(FileDescriptor oldFd) throws ErrnoException {
+        FileDescriptor fd = dupImpl(oldFd);
+        if (fd != null && oldFd != null && oldFd.hasName) {
+            fd.hasName = true;
+            fd.name = oldFd.name;
+        }
+        return fd;
+    }
+    //public native FileDescriptor dup2(FileDescriptor oldFd, int newFd) throws ErrnoException;
+    public native FileDescriptor dup2Impl(FileDescriptor oldFd, int newFd) throws ErrnoException;
+    public FileDescriptor dup2(FileDescriptor oldFd, int newFd) throws ErrnoException {
+        FileDescriptor fd = dup2Impl(oldFd, newFd);
+        if (fd != null && oldFd != null && oldFd.hasName) {
+            fd.hasName = true;
+            fd.name = oldFd.name;
+        }
+        return fd;
+    }
 // end WITH_TAINT_TRACKING
-    public native FileDescriptor dup(FileDescriptor oldFd) throws ErrnoException;
-    public native FileDescriptor dup2(FileDescriptor oldFd, int newFd) throws ErrnoException;
     public native String[] environ();
     public native void execv(String filename, String[] argv) throws ErrnoException;
     public native void execve(String filename, String[] argv, String[] envp) throws ErrnoException;
