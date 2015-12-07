@@ -288,12 +288,18 @@ static void Dalvik_java_lang_System_arraycopy(const u4* args, JValue* pResult)
         if (dstPos == 0 && dstArray->length == length) {
             /* entire array replaced */
             dstArray->taint.tag = (srcArray->taint.tag | srcPosTaint);
+            move32(dstArray->taintContents + dstPos,
+                    srcArray->taintContents + srcPos,
+                    length * sizeof(Taint));
         } else {
-            dstArray->taint.tag |= (srcArray->taint.tag | srcPosTaint);
+            u4 srcArrayTaint = srcArray->taint.tag;
+            dstArray->taint.tag |= srcPosTaint;
+            /* element-wise tainting */
+            for (int i = 0; i < length; i++) {
+                dstArray->taintContents[dstPos + i].tag =
+                    srcArray->taintContents[srcPos + i].tag | srcArrayTaint;
+            }
         }
-        memmove(dstArray->taintContents + dstPos,
-                srcArray->taintContents + srcPos,
-                length * sizeof(Taint));
 #endif
     } else {
         /*
@@ -321,12 +327,18 @@ static void Dalvik_java_lang_System_arraycopy(const u4* args, JValue* pResult)
             if (dstPos == 0 && dstArray->length == length) {
                 /* entire array replaced */
                 dstArray->taint.tag = (srcArray->taint.tag | srcPosTaint);
+                move32(dstArray->taintContents + dstPos,
+                        srcArray->taintContents + srcPos,
+                        length * sizeof(Taint));
             } else {
-                dstArray->taint.tag |= (srcArray->taint.tag | srcPosTaint);
+                u4 srcArrayTaint = srcArray->taint.tag;
+                dstArray->taint.tag |= srcPosTaint;
+                /* element-wise tainting */
+                for (int i = 0; i < length; i++) {
+                    dstArray->taintContents[dstPos + i].tag =
+                        srcArray->taintContents[srcPos + i].tag | srcArrayTaint;
+                }
             }
-            memmove(dstArray->taintContents + dstPos,
-                    srcArray->taintContents + srcPos,
-                    length * sizeof(Taint));
 #endif
         } else {
             /*
@@ -374,15 +386,21 @@ static void Dalvik_java_lang_System_arraycopy(const u4* args, JValue* pResult)
                 copyCount * width);
             dvmWriteBarrierArray(dstArray, 0, copyCount);
 #ifdef WITH_TAINT_TRACKING
-            if (dstPos == 0 && dstArray->length == copyCount) {
+            if (dstPos == 0 && dstArray->length == length) {
                 /* entire array replaced */
                 dstArray->taint.tag = (srcArray->taint.tag | srcPosTaint);
+                move32(dstArray->taintContents + dstPos,
+                        srcArray->taintContents + srcPos,
+                        length * sizeof(Taint));
             } else {
-                dstArray->taint.tag |= (srcArray->taint.tag | srcPosTaint);
+                u4 srcArrayTaint = srcArray->taint.tag;
+                dstArray->taint.tag |= srcPosTaint;
+                /* element-wise tainting */
+                for (int i = 0; i < length; i++) {
+                    dstArray->taintContents[dstPos + i].tag =
+                        srcArray->taintContents[srcPos + i].tag | srcArrayTaint;
+                }
             }
-            memmove(dstArray->taintContents + dstPos,
-                    srcArray->taintContents + srcPos,
-                    length * sizeof(Taint));
 #endif
             if (copyCount != length) {
                 dvmThrowArrayStoreExceptionIncompatibleArrayElement(srcPos + copyCount,
