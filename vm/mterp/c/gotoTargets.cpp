@@ -981,7 +981,7 @@ GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall,
             descriptions.push_back(getMethodString(methodToCall));
             descriptions.push_back("(");
 
-            outIndex = (is_static ? 2 : 0);
+            outIndex = (is_static ? 0 : 2);
 
             for (size_t argInd = 0; argInd < argCount; argInd++) {
                 char param = desc[argInd];
